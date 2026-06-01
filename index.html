@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Fundamental Theorem of Calculus — Interactive Visualizer</title>
+<meta name="description" content="An interactive visualization of the FTC: the slope of the total at any point equals the height of the rate at that same point.">
+<style>
+  :root {
+    --rate: #7F77DD;
+    --rate-strong: #534AB7;
+    --rate-deep: #3C3489;
+    --rate-fill: rgba(127, 119, 221, 0.28);
+    --total: #1D9E75;
+    --total-strong: #0F6E56;
+    --total-deep: #085041;
+    --ink: #1A1A1A;
+    --ink-soft: #444;
+    --ink-muted: #777;
+    --surface: #ffffff;
+    --surface-soft: #f5f5f3;
+    --border: #e5e3dc;
+    --info-bg: #EEF1F8;
+    --info-text: #1F3A66;
+    --uc-red: #E00122;
+    --uc-navy: #0E1E3D;
+    --font-display: Georgia, 'Times New Roman', serif;
+    --font-body: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    font-family: var(--font-body);
+    color: var(--ink);
+    background: #fafaf7;
+    line-height: 1.5;
+  }
+  body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  .page {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 28px 22px 48px;
+    flex: 1;
+    width: 100%;
+  }
+  header {
+    border-bottom: 4px solid var(--uc-red);
+    padding-bottom: 18px;
+    margin-bottom: 22px;
+  }
+  .label {
+    font-size: 12px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--uc-red);
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  h1 {
+    font-family: var(--font-display);
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--uc-navy);
+    margin: 0 0 6px;
+    letter-spacing: -0.01em;
+  }
+  .subtitle {
+    font-size: 15px;
+    color: var(--ink-soft);
+    margin: 0;
+  }
+  .controls {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  .scenario-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+  }
+  .scenario-row label {
+    font-size: 14px;
+    color: var(--ink-soft);
+    font-weight: 500;
+  }
+  select {
+    font-family: var(--font-body);
+    font-size: 14px;
+    padding: 7px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface);
+    color: var(--ink);
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  select:hover, select:focus {
+    border-color: var(--rate);
+    outline: none;
+  }
+  .slider-row {
+    display: grid;
+    grid-template-columns: 70px 1fr 60px;
+    gap: 12px;
+    align-items: center;
+  }
+  .slider-row label {
+    font-size: 14px;
+    color: var(--ink-soft);
+    font-weight: 500;
+  }
+  .slider-out {
+    font-size: 14px;
+    font-weight: 600;
+    text-align: right;
+    color: var(--ink);
+  }
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 6px;
+    background: #ddd;
+    border-radius: 3px;
+    outline: none;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    background: var(--uc-red);
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid white;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    background: var(--uc-red);
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid white;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+  .graph-box {
+    background: var(--surface-soft);
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 14px;
+    border-left: 5px solid var(--rate);
+  }
+  .graph-box.total {
+    border-left-color: var(--total);
+  }
+  .graph-head {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+  }
+  .graph-tag {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--rate-strong);
+    letter-spacing: 0.05em;
+  }
+  .graph-box.total .graph-tag {
+    color: var(--total-strong);
+  }
+  .graph-sub {
+    font-size: 13px;
+    color: var(--ink-muted);
+  }
+  canvas {
+    width: 100%;
+    height: 220px;
+    display: block;
+    cursor: crosshair;
+    touch-action: none;
+  }
+  .click-moment {
+    background: var(--surface);
+    border: 2px solid var(--rate);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 16px;
+  }
+  .click-moment-label {
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    font-weight: 700;
+    margin-bottom: 12px;
+    text-align: center;
+  }
+  .click-row {
+    display: grid;
+    grid-template-columns: 1fr 40px 1fr;
+    gap: 16px;
+    align-items: center;
+  }
+  .click-cell {
+    text-align: center;
+  }
+  .click-cell-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    margin-bottom: 4px;
+  }
+  .click-cell.rate .click-cell-label { color: var(--rate-strong); }
+  .click-cell.total .click-cell-label { color: var(--total-strong); }
+  .click-cell-value {
+    font-family: var(--font-display);
+    font-size: 26px;
+    font-weight: 700;
+  }
+  .click-cell.rate .click-cell-value { color: var(--rate-strong); }
+  .click-cell.total .click-cell-value { color: var(--total-strong); }
+  .click-equals {
+    font-size: 32px;
+    color: var(--ink-soft);
+    text-align: center;
+    font-weight: 300;
+  }
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .stat {
+    background: var(--surface-soft);
+    padding: 10px 14px;
+    border-radius: 8px;
+  }
+  .stat-label {
+    font-size: 11px;
+    color: var(--ink-muted);
+    margin-bottom: 2px;
+    letter-spacing: 0.04em;
+  }
+  .stat-value {
+    font-size: 18px;
+    font-weight: 600;
+  }
+  .stat-value.rate { color: var(--rate-strong); }
+  .stat-value.total { color: var(--total-strong); }
+  .hint {
+    background: var(--info-bg);
+    color: var(--info-text);
+    padding: 12px 14px;
+    border-radius: 8px;
+    font-size: 14px;
+    line-height: 1.55;
+  }
+  .hint strong { color: var(--uc-navy); }
+  footer {
+    text-align: center;
+    font-size: 12px;
+    color: var(--ink-muted);
+    padding: 18px 22px 26px;
+    border-top: 1px solid var(--border);
+    margin-top: 20px;
+  }
+  footer a {
+    color: var(--uc-red);
+    text-decoration: none;
+  }
+  footer a:hover {
+    text-decoration: underline;
+  }
+  @media (max-width: 600px) {
+    h1 { font-size: 24px; }
+    .click-row { grid-template-columns: 1fr 30px 1fr; gap: 8px; }
+    .click-cell-value { font-size: 20px; }
+    .click-equals { font-size: 24px; }
+    canvas { height: 180px; }
+  }
+</style>
+</head>
+<body>
+<main class="page">
+  <header>
+    <div class="label">Interactive · Fundamental Theorem of Calculus</div>
+    <h1>The slope of the total equals the height of the rate.</h1>
+    <p class="subtitle">Drag your cursor across either graph. Watch the two highlighted numbers below — they are always the same. That's the Fundamental Theorem of Calculus, made visible.</p>
+  </header>
+
+  <div class="controls">
+    <div class="scenario-row">
+      <label for="scenario">Context:</label>
+      <select id="scenario">
+        <option value="drug">Drug concentration after a dose</option>
+        <option value="tank">Water filling a tank</option>
+        <option value="velocity">Distance from velocity</option>
+        <option value="custom">Custom — adjust the curve</option>
+      </select>
+    </div>
+    <div class="slider-row">
+      <label for="amp">Peak</label>
+      <input type="range" min="20" max="100" step="1" value="60" id="amp">
+      <span class="slider-out" id="ampOut">60</span>
+    </div>
+    <div class="slider-row">
+      <label for="speed">Decay</label>
+      <input type="range" min="10" max="80" step="1" value="35" id="speed">
+      <span class="slider-out" id="speedOut">35</span>
+    </div>
+  </div>
+
+  <div class="graph-box rate">
+    <div class="graph-head">
+      <span class="graph-tag">RATE</span>
+      <span class="graph-sub" id="topLabel">— rate of drug absorption (mg / hour)</span>
+    </div>
+    <canvas id="topCanvas" width="800" height="220"></canvas>
+  </div>
+
+  <div class="graph-box total">
+    <div class="graph-head">
+      <span class="graph-tag">TOTAL</span>
+      <span class="graph-sub" id="botLabel">— accumulated drug in bloodstream (mg)</span>
+    </div>
+    <canvas id="botCanvas" width="800" height="220"></canvas>
+  </div>
+
+  <div class="click-moment">
+    <div class="click-moment-label">The click moment — these are always equal</div>
+    <div class="click-row">
+      <div class="click-cell rate">
+        <div class="click-cell-label">HEIGHT OF RATE AT x</div>
+        <div class="click-cell-value" id="rateNum">—</div>
+      </div>
+      <div class="click-equals">=</div>
+      <div class="click-cell total">
+        <div class="click-cell-label">SLOPE OF TOTAL AT x</div>
+        <div class="click-cell-value" id="slopeNum">—</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-label">cursor at x</div>
+      <div class="stat-value" id="xVal">—</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">total accumulated</div>
+      <div class="stat-value total" id="totalVal">—</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">area under rate</div>
+      <div class="stat-value rate" id="areaVal">—</div>
+    </div>
+  </div>
+
+  <div class="hint">
+    <strong>Drag the cursor.</strong> The purple area under the rate graph equals the green height of the total graph. The slope of the green tangent line is always equal to where the purple curve is right now. That equality is the Fundamental Theorem of Calculus. <span id="hintExtra"></span>
+  </div>
+</main>
+
+<footer>
+  Built as a teaching demonstration for AI Literacy, Research &amp; Teaching · 
+  <a href="https://github.com/" target="_blank" rel="noopener">view source</a>
+</footer>
+
+<script>
+(function(){
+  const top = document.getElementById('topCanvas');
+  const bot = document.getElementById('botCanvas');
+  const tctx = top.getContext('2d');
+  const bctx = bot.getContext('2d');
+  const ampEl = document.getElementById('amp');
+  const speedEl = document.getElementById('speed');
+  const ampOut = document.getElementById('ampOut');
+  const speedOut = document.getElementById('speedOut');
+  const scenarioEl = document.getElementById('scenario');
+  const topLabel = document.getElementById('topLabel');
+  const botLabel = document.getElementById('botLabel');
+  const xVal = document.getElementById('xVal');
+  const rateNum = document.getElementById('rateNum');
+  const slopeNum = document.getElementById('slopeNum');
+  const totalVal = document.getElementById('totalVal');
+  const areaVal = document.getElementById('areaVal');
+  const hintExtra = document.getElementById('hintExtra');
+
+  const xMin = 0, xMax = 10;
+  const steps = 400;
+  let cursorX = 5;
+
+  const scenarios = {
+    drug: {
+      label: '— rate of drug absorption (mg / hour)',
+      Flabel: '— accumulated drug in bloodstream (mg)',
+      hint: 'When the rate peaks, the total climbs fastest. When the rate returns to zero, the total stops growing.',
+      xUnit: 'h', rateUnit: 'mg/h', totalUnit: 'mg',
+      f: (x, a, s) => {
+        const k = s / 30;
+        return a * x * Math.exp(-k * x) / (1 / k * Math.exp(-1));
+      }
+    },
+    tank: {
+      label: '— water inflow rate (L / min)',
+      Flabel: '— total water in tank (L)',
+      hint: 'When the inflow peaks, the tank fills fastest. When the inflow stops, the total levels off.',
+      xUnit: 'min', rateUnit: 'L/min', totalUnit: 'L',
+      f: (x, a, s) => {
+        const k = s / 30;
+        const c = 5;
+        return a * Math.exp(-Math.pow((x - c) * k / 2, 2));
+      }
+    },
+    velocity: {
+      label: '— velocity (m / s)',
+      Flabel: '— distance traveled (m)',
+      hint: 'When velocity is highest, distance grows fastest. When velocity returns to zero, distance stops growing.',
+      xUnit: 's', rateUnit: 'm/s', totalUnit: 'm',
+      f: (x, a, s) => {
+        const k = s / 30;
+        return a * Math.sin(k * x * Math.PI / 5);
+      }
+    },
+    custom: {
+      label: '— adjust peak and decay to explore',
+      Flabel: '— accumulated value',
+      hint: 'Reshape the rate with the sliders. The total updates instantly.',
+      xUnit: '', rateUnit: '', totalUnit: '',
+      f: (x, a, s) => {
+        const k = s / 30;
+        return a * Math.sin(k * x * Math.PI / 5) * Math.exp(-x / 15);
+      }
+    }
+  };
+
+  function getScenario() {
+    return scenarios[scenarioEl.value];
+  }
+
+  function computeSamples() {
+    const sc = getScenario();
+    const a = Number(ampEl.value);
+    const s = Number(speedEl.value);
+    const xs = [], rs = [], ts = [];
+    let acc = 0;
+    const dx = (xMax - xMin) / steps;
+    for (let i = 0; i <= steps; i++) {
+      const x = xMin + i * dx;
+      const r = sc.f(x, a, s);
+      if (i > 0) {
+        const prev = sc.f(x - dx, a, s);
+        acc += (r + prev) * dx / 2;
+      }
+      xs.push(x);
+      rs.push(r);
+      ts.push(acc);
+    }
+    return { xs, rs, ts };
+  }
+
+  function findIdx(x) {
+    return Math.max(0, Math.min(steps,
+      Math.round((x - xMin) / (xMax - xMin) * steps)));
+  }
+
+  function drawAxes(ctx, w, h, padL, padR, padT, padB, yMin, yMax) {
+    ctx.strokeStyle = '#cccac0';
+    ctx.lineWidth = 1;
+    ctx.fillStyle = '#888';
+    ctx.font = '11px sans-serif';
+    const y0 = padT + (0 - yMax) / (yMin - yMax) * (h - padT - padB);
+    ctx.beginPath();
+    ctx.moveTo(padL, y0);
+    ctx.lineTo(w - padR, y0);
+    ctx.moveTo(padL, padT);
+    ctx.lineTo(padL, h - padB);
+    ctx.stroke();
+    ctx.fillText('0', padL - 12, y0 + 4);
+    ctx.fillText('x=0', padL - 8, h - padB + 14);
+    ctx.fillText('x=' + xMax, w - padR - 22, h - padB + 14);
+  }
+
+  function setCanvasDPI(canvas, ctx) {
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = Math.floor(rect.width * dpr);
+    canvas.height = Math.floor(rect.height * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { w: rect.width, h: rect.height };
+  }
+
+  function draw() {
+    ampOut.textContent = ampEl.value;
+    speedOut.textContent = speedEl.value;
+    const sc = getScenario();
+    topLabel.textContent = sc.label;
+    botLabel.textContent = sc.Flabel;
+    hintExtra.textContent = sc.hint;
+
+    const dims1 = setCanvasDPI(top, tctx);
+    const dims2 = setCanvasDPI(bot, bctx);
+    const w = dims1.w, h = dims1.h;
+    const padL = 44, padR = 14, padT = 14, padB = 22;
+
+    const { xs, rs, ts } = computeSamples();
+    const idx = findIdx(cursorX);
+    const xCur = xs[idx];
+    const rCur = rs[idx];
+    const tCur = ts[idx];
+
+    let rMin = 0, rMax = 0;
+    rs.forEach(v => { if (v < rMin) rMin = v; if (v > rMax) rMax = v; });
+    if (rMax <= 0) rMax = 1;
+    rMin = Math.min(rMin, 0);
+    rMax = rMax * 1.15;
+    if (rMin < 0) rMin = rMin * 1.15;
+
+    let tMax = 0, tMin = 0;
+    ts.forEach(v => { if (v > tMax) tMax = v; if (v < tMin) tMin = v; });
+    if (tMax <= 0) tMax = 1;
+    tMax = tMax * 1.15;
+    tMin = Math.min(tMin, 0);
+
+    tctx.clearRect(0, 0, w, h);
+    const X = (x) => padL + (x - xMin) / (xMax - xMin) * (w - padL - padR);
+    const Y1 = (y) => padT + (y - rMax) / (rMin - rMax) * (h - padT - padB);
+
+    tctx.fillStyle = 'rgba(127,119,221,0.28)';
+    tctx.beginPath();
+    tctx.moveTo(X(xs[0]), Y1(0));
+    for (let i = 0; i <= idx; i++) {
+      tctx.lineTo(X(xs[i]), Y1(rs[i]));
+    }
+    tctx.lineTo(X(xs[idx]), Y1(0));
+    tctx.closePath();
+    tctx.fill();
+
+    drawAxes(tctx, w, h, padL, padR, padT, padB, rMin, rMax);
+
+    tctx.strokeStyle = '#7F77DD';
+    tctx.lineWidth = 2.5;
+    tctx.beginPath();
+    for (let i = 0; i <= steps; i++) {
+      const xp = X(xs[i]), yp = Y1(rs[i]);
+      if (i === 0) tctx.moveTo(xp, yp); else tctx.lineTo(xp, yp);
+    }
+    tctx.stroke();
+
+    tctx.strokeStyle = '#534AB7';
+    tctx.lineWidth = 2;
+    tctx.setLineDash([4, 3]);
+    tctx.beginPath();
+    tctx.moveTo(padL, Y1(rCur));
+    tctx.lineTo(X(xCur), Y1(rCur));
+    tctx.stroke();
+    tctx.setLineDash([]);
+
+    tctx.strokeStyle = 'rgba(0,0,0,0.35)';
+    tctx.setLineDash([3, 3]);
+    tctx.beginPath();
+    tctx.moveTo(X(xCur), padT);
+    tctx.lineTo(X(xCur), h - padB);
+    tctx.stroke();
+    tctx.setLineDash([]);
+
+    tctx.fillStyle = '#534AB7';
+    tctx.beginPath();
+    tctx.arc(X(xCur), Y1(rCur), 5, 0, Math.PI * 2);
+    tctx.fill();
+
+    tctx.fillStyle = '#3C3489';
+    tctx.font = '600 12px sans-serif';
+    tctx.fillText('height = ' + rCur.toFixed(1), X(xCur) + 8, Y1(rCur) - 8);
+
+    const Y2 = (y) => padT + (y - tMax) / (tMin - tMax) * (h - padT - padB);
+    bctx.clearRect(0, 0, w, h);
+    drawAxes(bctx, w, h, padL, padR, padT, padB, tMin, tMax);
+
+    bctx.strokeStyle = '#1D9E75';
+    bctx.lineWidth = 2.5;
+    bctx.beginPath();
+    for (let i = 0; i <= steps; i++) {
+      const xp = X(xs[i]), yp = Y2(ts[i]);
+      if (i === 0) bctx.moveTo(xp, yp); else bctx.lineTo(xp, yp);
+    }
+    bctx.stroke();
+
+    bctx.strokeStyle = 'rgba(0,0,0,0.35)';
+    bctx.setLineDash([3, 3]);
+    bctx.beginPath();
+    bctx.moveTo(X(xCur), padT);
+    bctx.lineTo(X(xCur), h - padB);
+    bctx.stroke();
+    bctx.setLineDash([]);
+
+    const slope = rCur;
+    const dxT = (xMax - xMin) / (w - padL - padR);
+    const dyT = (tMax - tMin) / (h - padT - padB);
+    const tanLen = 100;
+    const px = X(xCur), py = Y2(tCur);
+    const tx = tanLen, ty = -slope * tanLen * (dxT / dyT);
+    bctx.strokeStyle = '#0F6E56';
+    bctx.lineWidth = 2.5;
+    bctx.beginPath();
+    bctx.moveTo(px - tx * 0.55, py - ty * 0.55);
+    bctx.lineTo(px + tx * 0.55, py + ty * 0.55);
+    bctx.stroke();
+
+    bctx.fillStyle = '#0F6E56';
+    bctx.beginPath();
+    bctx.arc(px, py, 5, 0, Math.PI * 2);
+    bctx.fill();
+    bctx.font = '600 12px sans-serif';
+    bctx.fillStyle = '#085041';
+    bctx.fillText('slope = ' + slope.toFixed(1), px + 10, py - 8);
+
+    const xu = sc.xUnit ? ' ' + sc.xUnit : '';
+    const rU = sc.rateUnit ? ' ' + sc.rateUnit : '';
+    const tU = sc.totalUnit ? ' ' + sc.totalUnit : '';
+
+    xVal.textContent = xCur.toFixed(1) + xu;
+    rateNum.textContent = rCur.toFixed(1) + rU;
+    slopeNum.textContent = rCur.toFixed(1) + rU;
+    totalVal.textContent = tCur.toFixed(1) + tU;
+    areaVal.textContent = tCur.toFixed(1) + tU;
+  }
+
+  function attachCursor(canvas) {
+    function setFromClient(clientX) {
+      const rect = canvas.getBoundingClientRect();
+      const padL = 44, padR = 14;
+      const xRange = rect.width - padL - padR;
+      const px = clientX - rect.left;
+      let x = (px - padL) / xRange * (xMax - xMin) + xMin;
+      if (x < xMin) x = xMin;
+      if (x > xMax) x = xMax;
+      cursorX = x;
+      draw();
+    }
+    canvas.addEventListener('mousemove', e => setFromClient(e.clientX));
+    canvas.addEventListener('mousedown', e => setFromClient(e.clientX));
+    canvas.addEventListener('touchmove', function(e) {
+      e.preventDefault();
+      const t = e.touches[0];
+      setFromClient(t.clientX);
+    }, { passive: false });
+    canvas.addEventListener('touchstart', function(e) {
+      const t = e.touches[0];
+      setFromClient(t.clientX);
+    });
+  }
+
+  attachCursor(top);
+  attachCursor(bot);
+  ampEl.addEventListener('input', draw);
+  speedEl.addEventListener('input', draw);
+  scenarioEl.addEventListener('change', draw);
+  window.addEventListener('resize', draw);
+
+  draw();
+})();
+</script>
+</body>
+</html>
