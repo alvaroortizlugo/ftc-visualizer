@@ -10,9 +10,7 @@ Translated into plain language: **the slope of the total accumulation at any poi
 
 ## Live demo
 
-→ https://YOUR-USERNAME.github.io/ftc-visualizer/
-
-(Replace `YOUR-USERNAME` with your actual GitHub username after deployment.)
+→ https://alvaroortizlugo.github.io/ftc-visualizer/
 
 ## How to use
 
